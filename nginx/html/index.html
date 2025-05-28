@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Viral Faceless Shorts Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+
+    .top-bar {
+      padding: 1rem;
+      background: #f8f9fa;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    #card-grid {
+      display: flex;
+      flex: 1;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 1rem;
+      justify-content: center;
+    }
+
+    #card-grid:empty::before {
+      content: "No videos found.\ATry running a workflow to generate content.";
+      white-space: pre-line;
+      display: block;
+      text-align: center;
+      color: #6c757d;
+      font-size: 1.2rem;
+      margin-top: 3rem;
+    }
+
+    .card-tile {
+      width: 300px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 1rem;
+      background-color: #fff;
+      position: relative;
+    }
+
+    .card-tile h6 {
+      font-weight: bold;
+      cursor: pointer;
+      height: 3hl;
+      overflow: hidden;
+    }
+
+    .card-tile p {
+      font-size: 0.9rem;
+      cursor: pointer;
+      height: 5hl;
+      overflow: hidden;
+    }
+
+    .progress {
+      height: 8px;
+      margin-top: 10px;
+    }
+
+    .toast-container {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      z-index: 9999;
+    }
+  </style>
+</head>
+
+<body class="d-flex flex-column min-vh-100">
+
+  <div class="top-bar px-3 py-2 border-bottom bg-light d-flex flex-wrap justify-content-between align-items-center">
+    <h5 class="mb-2 mb-md-0 fw-semibold">Viral Faceless Shorts Generator</h5>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#customTopicModal">
+        Custom Topic Workflow
+      </button>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#workflowModal">
+        Trend-Based Workflow
+      </button>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal fade" id="workflowModal" tabindex="-1" aria-labelledby="workflowModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="workflowModalLabel">Workflow Settings</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="geo" class="form-label">Country</label>
+              <select id="geo" class="form-control">
+                <option value="" disabled selected>Select country</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="hours" class="form-label">Time Range</label>
+              <select id="hours" class="form-control">
+                <option value="" selected disabled>Select time range</option>
+                <option value="4">Last 4 hours</option>
+                <option value="24">Last 24 hours</option>
+                <option value="48">Last 48 hours</option>
+                <option value="168">Last 7 days</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="category" class="form-label">Category</label>
+              <select id="category" class="form-control">
+                <option value="">All categories</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="status" class="form-label">Trend Status</label>
+              <select id="status" class="form-control">
+                <option value="">All trends</option>
+                <option value="active">Only active trends</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="sort" class="form-label">Sort By</label>
+              <select id="sort" class="form-control">
+                <option value="">Sort by relevance</option>
+                <option value="title">Sort by title</option>
+                <option value="search-volume">Sort by search volume</option>
+                <option value="recency">Sort by recency</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="maxVideos" class="form-label">Max Videos</label>
+              <input type="number" id="maxVideos" class="form-control" min="1" placeholder="Maximum number of videos"
+                title="Set the maximum number of videos to process, or leave empty for no limit" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button class="btn btn-primary" onclick="executeWorkflow()" data-bs-dismiss="modal">Execute Workflow</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Topic Modal -->
+  <div class="modal fade" id="customTopicModal" tabindex="-1" aria-labelledby="customTopicModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="customTopicModalLabel">Custom Topic Workflow</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="customTopic" class="form-label">Topic Keyword</label>
+            <input type="text" class="form-control" id="customTopic" placeholder="Enter a topic keyword" required>
+          </div>
+          <div class="mb-3">
+            <label for="customDescription" class="form-label">Expected Video Description</label>
+            <textarea class="form-control" id="customDescription" rows="3"
+              placeholder="Describe what you expect to see in the final video" required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button class="btn btn-primary" onclick="generateVideo()" data-bs-dismiss="modal">Generate Video</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards Grid -->
+  <div id="card-grid"></div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script>
+    const cardGrid = document.getElementById("card-grid");
+    const toastContainer = document.getElementById("toast-container");
+
+    let generateQueue = [], ttsQueue = [], alignQueue = [], burnQueue = [];
+    let generateLock = false, ttsLock = false, alignLock = false, burnLock = false;
+
+    function showToast(message) {
+      const toast = document.createElement("div");
+      toast.className = "toast align-items-center text-white bg-primary border-0 show";
+      toast.role = "alert";
+      toast.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">${message}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>`;
+      toastContainer.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    function updateCard(id, { title, description, progress, label, downloadUrl }) {
+      const card = document.getElementById(id);
+      if (!card) return;
+
+      if (title) {
+        const titleEl = card.querySelector("h6");
+        titleEl.textContent = title;
+        titleEl.onclick = () => copyToClipboard(title);
+      }
+
+      if (description !== undefined) {
+        const descEl = card.querySelector("p");
+        descEl.textContent = description;
+        descEl.onclick = () => copyToClipboard(description);
+      }
+
+      if (progress !== undefined) {
+        card.querySelector(".progress-bar").style.width = progress + "%";
+      }
+
+      if (label) {
+        card.querySelector(".status-label").textContent = label;
+      }
+
+      if (downloadUrl) {
+        const btn = document.createElement("a");
+        btn.href = downloadUrl;
+        btn.download = `${title || 'video'}.mp4`;
+        btn.className = "btn btn-sm btn-outline-primary mt-2 w-100";
+        btn.textContent = "Download Video";
+        card.appendChild(btn);
+      }
+    }
+
+    function createCard(id, trendTitle) {
+      const card = document.createElement("div");
+      card.id = id;
+      card.className = "card-tile";
+      card.innerHTML = `
+        <h6>${trendTitle}</h6>
+        <p></p>
+        <div class="progress">
+          <div class="progress-bar" style="width: 5%"></div>
+        </div>
+        <div class="status-label mt-1 text-muted" style="font-size: 0.8rem;">Queued...</div>
+      `;
+      cardGrid.appendChild(card);
+    }
+
+    async function withRetry(taskFn, onRetry) {
+      while (true) {
+        try {
+          return await taskFn();
+        } catch (err) {
+          if (onRetry) onRetry(err);
+          showToast("Retrying after error...");
+          await new Promise(res => setTimeout(res, 5000));
+        }
+      }
+    }
+
+    function generateId() {
+      const array = new Uint8Array(10);
+      window.crypto.getRandomValues(array);
+      return Array.from(array, byte => ('0' + byte.toString(16)).slice(-2)).join('');
+    }
+
+    async function executeWorkflow() {
+      const geo = document.getElementById("geo").value;
+      const hours = document.getElementById("hours").value;
+      const status = document.getElementById("status").value;
+      const sort = document.getElementById("sort").value;
+      const category = document.getElementById("category").value;
+      const maxVideos = parseInt(document.getElementById("maxVideos").value) || Infinity;
+
+      let trends = await withRetry(() =>
+        fetch("/api/scrape", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ geo, hours, status, sort, category })
+        }).then(res => res.json())
+      );
+
+      if (!Array.isArray(trends)) {
+        showToast("Error fetching trends");
+        return;
+      }
+      trends = trends.slice(0, maxVideos);
+
+      trends.forEach(trend => {
+        const id = generateId();
+        createCard(id, trend.trend);
+        generateQueue.push({ id, trend });
+      });
+
+      processGenerate(); processTTS(); processAlign(); processBurn();
+    }
+
+    async function generateVideo() {
+      const topic = document.getElementById("customTopic").value;
+      const description = document.getElementById("customDescription").value;
+
+      if (!topic || !description) {
+        showToast("Please enter both topic and description");
+        return;
+      }
+
+      const id = await generateId();
+      createCard(id, topic);
+      updateCard(id, { description, progress: 5, label: "Generating content..." });
+
+      generateQueue.push({ id, trend: { trend: topic, body: description } });
+      processGenerate(); processTTS(); processAlign(); processBurn();
+    }
+
+    async function processGenerate() {
+      if (generateLock || generateQueue.length === 0) return;
+      generateLock = true;
+
+      const { id, trend } = generateQueue.shift();
+      updateCard(id, { progress: 10, label: "Generating content..." });
+
+      const generated = await withRetry(() => generateContent(trend), () => updateCard(id, { label: "Retrying generation..." }));
+      updateCard(id, {
+        title: generated.title,
+        description: generated.description,
+        progress: 30,
+        label: "Content generated"
+      });
+
+      ttsQueue.push({ id, trend, generated });
+      generateLock = false;
+      processGenerate();
+      processTTS();
+    }
+
+    async function processTTS() {
+      if (ttsLock || ttsQueue.length === 0) return;
+      ttsLock = true;
+
+      const { id, generated } = ttsQueue.shift();
+      updateCard(id, { progress: 50, label: "Generating TTS..." });
+
+      const ttsAudio = await withRetry(() => generateTTS(generated.body), () => updateCard(id, { label: "Retrying TTS..." }));
+      alignQueue.push({ id, generated, ttsAudio });
+      updateCard(id, { progress: 60, label: "TTS generated" });
+
+      ttsLock = false;
+      processTTS();
+      processAlign();
+    }
+
+    async function processAlign() {
+      if (alignLock || alignQueue.length === 0) return;
+      alignLock = true;
+
+      const { id, generated, ttsAudio } = alignQueue.shift();
+      updateCard(id, { progress: 70, label: "Aligning subtitles..." });
+
+      const srt = await withRetry(() => alignSubtitles(generated.body, ttsAudio.base64), () => updateCard(id, { label: "Retrying alignment..." }));
+      burnQueue.push({ id, srt, ttsAudio, title: generated.title });
+      updateCard(id, { progress: 80, label: "Subtitles aligned" });
+
+      alignLock = false;
+      processAlign();
+      processBurn();
+    }
+
+    async function processBurn() {
+      if (burnLock || burnQueue.length === 0) return;
+      burnLock = true;
+
+      const { id, srt, ttsAudio, title } = burnQueue.shift();
+      updateCard(id, { progress: 90, label: "Rendering video..." });
+
+      const video = await withRetry(() => burnVideo(ttsAudio.base64, srt), () => updateCard(id, { label: "Retrying rendering..." }));
+      updateCard(id, { progress: 100, label: "Video ready", downloadUrl: video.url, title });
+
+      burnLock = false;
+      processBurn();
+    }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => showToast("Copied to clipboard"));
+    }
+
+    // -------------------
+    // API Helpers
+    // -------------------
+
+    async function generateContent(trend) {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(trend)
+      });
+      return await res.json();
+    }
+
+    let speaker_id = undefined;
+
+    async function generateTTS(text) {
+      if (!speaker_id) {
+        const res = await fetch("/api/coquiSpeakerId");
+        const data = await res.json();
+        speaker_id = data.speakerId;
+      }
+      const res = await fetch(`/api/tts?text=${encodeURIComponent(text)}&speaker_id=${speaker_id}`);
+      const blob = await res.blob();
+      const base64 = await blobToBase64(blob);
+      return { base64 };
+    }
+
+    async function alignSubtitles(text, audioBase64) {
+      const res = await fetch("/api/align", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, audio: audioBase64 })
+      });
+      const result = await res.json();
+      return result.srt;
+    }
+
+    async function burnVideo(audioBase64, srt) {
+      const res = await fetch("/api/burn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ audio: audioBase64, subtitles: srt })
+      });
+      const blob = await res.blob();
+      return { url: URL.createObjectURL(blob) };
+    }
+
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      const populateOptions = async (file, select) => {
+        const data = await fetch(file).then(res => res.json());
+        Object.entries(data).forEach(([value, text]) => {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = text;
+          select.appendChild(option);
+        });
+      };
+
+      populateOptions("/assets/countries.json", document.getElementById("geo"));
+      populateOptions("/assets/categories.json", document.getElementById("category"));
+
+
+      const geo = localStorage.getItem("geo");
+      const hours = localStorage.getItem("hours");
+      const status = localStorage.getItem("status");
+      const sort = localStorage.getItem("sort");
+      const category = localStorage.getItem("category");
+
+      if (geo) document.getElementById("geo").value = geo;
+      if (hours) document.getElementById("hours").value = hours;
+      if (status) document.getElementById("status").value = status;
+      if (sort) document.getElementById("sort").value = sort;
+      if (category) document.getElementById("category").value = category;
+
+      // Save on change
+      document.getElementById("geo").addEventListener("input", e => localStorage.setItem("geo", e.target.value));
+      document.getElementById("hours").addEventListener("change", e => localStorage.setItem("hours", e.target.value));
+      document.getElementById("status").addEventListener("input", e => localStorage.setItem("status", e.target.value));
+      document.getElementById("sort").addEventListener("input", e => localStorage.setItem("sort", e.target.value));
+      document.getElementById("category").addEventListener("change", e => localStorage.setItem("category", e.target.value));
+    });
+  </script>
+
+  <footer class="border-top text-center py-3">
+    Made with <span style="color: red;">&hearts;</span> by <a href="https://cirociampaglia.it" class="text-black"
+      target="_blank" rel="noopener noreferrer">Ciro Ciampaglia</a>
+  </footer>
+</body>
+
+</html>

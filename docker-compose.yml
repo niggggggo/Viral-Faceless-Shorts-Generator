@@ -1,0 +1,27 @@
+services:
+  trendscraper:
+    build:
+      context: ./trendscraper
+    environment:
+      - GEMINI_API_KEY
+      - LOCALE
+      - COQUI_SPEAKER_ID
+    volumes:
+      - ./videos:/mnt/videos
+  coqui:
+    build:
+      context: ./coqui
+  speechalign:
+    build:
+      context: ./speechalign
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/html:/usr/share/nginx/html:ro
+    depends_on:
+      - trendscraper
+      - coqui
+      - speechalign
